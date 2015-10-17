@@ -4,7 +4,10 @@ A First Person Shooter Toolkit for the [Unity Engine](http://unity3d.com). It wi
 FPS Controller Kit is fully written in C#.
 
 ###Features
-(To be added)
+(To be added once the features are added)
+
+###Documentation
+(To be added once the project is near completion)
 
 ###Software Requirements
 
@@ -13,5 +16,7 @@ This project is fully compatible with Unity Free Edition. Make sure you have the
 ###Copyright
 
 See LICENSE.
+
+###Developers
 Programming - Rudra Nil Basu.
 Made By PriZm Studios.
