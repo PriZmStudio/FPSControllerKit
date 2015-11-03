@@ -6,8 +6,7 @@ using UnityEngine;
 using System.Collections;
 
 public class PlayerMovement : MonoBehaviour {
-	
-	public AudioClip landfx;//audiosource attatched to this game object with landing sound effect
+
 	//falling
 	[HideInInspector]
 	public float airTime = 0.0f;//total time that player is airborn
@@ -85,7 +84,26 @@ public class PlayerMovement : MonoBehaviour {
 	public float strafeSpeedPercentage = 0.8f;//percentage to decrease movement speed while strafing directly left or right
 	public float zoomSpeedPercentage = 0.6f;//percentage to decrease movement speed while zooming
 
+
 	
+	//player movement speed amounts
+	public float runSpeed = 9.0f;
+	public float walkSpeed = 4.0f;
+	public float jumpSpeed = 3.0f;
+	private float limitStrafeSpeed = 0.0f;
+	public float backwardSpeedPercentage = 0.6f;//percentage to decrease movement speed while moving backwards
+	public float crouchSpeedPercentage = 0.55f;//percentage to decrease movement speed while crouching
+	private float crouchSpeedAmt = 1.0f;
+	public float strafeSpeedPercentage = 0.8f;//percentage to decrease movement speed while strafing directly left or right
+	private float speedAmtY = 1.0f;//current player speed per axis which is applied to rigidbody velocity vector
+	private float speedAmtX = 1.0f;
+	[HideInInspector]
+	public bool zoomSpeed = false;//to control speed of movement while zoomed, handled by Ironsights script and true when zooming
+	public float zoomSpeedPercentage = 0.6f;//percentage to decrease movement speed while zooming
+	private float zoomSpeedAmt = 1.0f;
+	private float speed = 6.0f;//combined axis speed of player movement
+
+
 	//sound effeects
 	public AudioClip landfx;//audiosource attatched to this game object with landing sound effect
 	public AudioClip jumpfx;//audiosource attatched to this game object with jumping sound effect
@@ -249,6 +267,139 @@ public class PlayerMovement : MonoBehaviour {
 			}
 
 			//cancel sprint operation in certain cases
+			if((sprintActive && Input.GetKey(PlayerComponent.fire))
+			   || (sprintActive && Input.GetKey(PlayerComponent.reload))
+			   || (sprintActive && Input.GetKey(PlayerComponent.zoom))
+			   || (Input.GetKey(PlayerComponent.zoomed) && Input.GetKey(PlayerComponent.fire))
+			   || climbing )
+			{
+				cancelSprint=true;
+			}
+
+			// reset cancelSprint var once it is over
+
+			if(!sprintActive && cancelSprint)
+			{
+				if(!Input.GetKey (PlayerComponent.zoom))
+				{
+					cancelSprint = false;
+				}
+			}
+
+			// check if the player can run
+
+			if(inputY!=0.0f
+			   && sprintActive
+			   && !crouched
+			   && (!cancelSprint || cancelSprint && PlayerComponent.zoomed)
+			   && grounded
+			   )
+			{
+				canRun=true;
+				PlayerComponent.zoomed=false;
+				sprintStopState=true;
+			}
+			else
+			{
+				if(sprintStopState)
+				{
+					sprintStopTime=Time.time;
+					sprintStopTime=false;
+				}
+				canRun=false;
+			}
+
+			//-----------------------------------------
+			// Player Movement Speeds
+			//-----------------------------------------
+
+			// checking if the player can run
+
+			if(canRun)
+			{
+				if(speed < runSpeed)
+				{
+					// gradually accelerate to running speed
+					speed+=12*Time.deltaTime;
+				}
+			}
+			else
+			{
+				if(speed>walkSpeed)
+				{
+					speed-=16*Time.deltaTime; // deaccelerating if walking
+				}
+			}
+
+			// check if player is zooming and set the speed
+			if(zoomSpeed)
+			{
+				if(zoomSpeedAmt>zoomSpeedPercentage)
+				{
+					zoomSpeedAmt -= Time.deltaTime;//gradually decrease variable to zooming limit value
+				}
+			}
+			else
+			{
+				if(zoomSpeedAmt < 1.0f)
+				{
+					zoomSpeedAmt += Time.deltaTime;//gradually increase variable to neutral
+				}
+			}
+
+			// check if the player is crouched
+			// also check midpos since the player can be uncrouched and still be under obstacle
+			if(crouched || midPos<0.9f)
+			{
+				if(crouchSpeedAmt > crouchSpeedPercentage)
+				{
+					crouchSpeedAmt -= Time.deltaTime;//gradually decrease variable to crouch limit value
+				}
+			}
+			else
+			{
+				if(crouchSpeedAmt < 1.0f)
+				{
+					crouchSpeedAmt += Time.deltaTime;//gradually increase variable to neutral
+				}
+			}
+
+			// limit the speed if backpedalling
+			if(inputY >=0)
+			{
+				if(speedAmtY<1.0f)
+				{
+					speedAmtY+=Time.deltaTime; // gradually increase the speed to the neutral value
+				}
+			}
+			else
+			{
+				if(speedAmtY>backwardSpeedPercentage)
+				{
+					speedAmtY-=Time.deltaTime; // gradually decrease backpedal  to its limit value
+				}
+			}
+
+			// allow limit of speed if strafting directly and not moving sideways
+			if(inputX==0 && inputY!=0)
+			{
+				if(speedAmtX<1.0f)
+				{
+					speedAmtX+=Time.deltaTime;
+				}
+			}
+			else
+			{
+				if(speedAmtX > strafeSpeedPercentage)
+				{
+					speedAmtX -= Time.deltaTime;//gradually decrease variable to strafe limit value
+				}
+			}
+
+			//-----------------------------------------
+			// Jumping
+			//-----------------------------------------
+
 		}
 	}
 }
